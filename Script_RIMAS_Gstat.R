@@ -20,7 +20,7 @@ RIMAS_TMP <- as_tibble(RIMAS_TMP)
 #Transform character in date
 RIMAS_TMP$Date <- lubridate::as_date(RIMAS_TMP$Date,  format = '%m/%d/%Y') 
 
-#Create cokumns of year, month, and day
+#Create columns of year, month, and day
 RIMAS_TMP_YMD <- RIMAS_TMP %>%
   dplyr::mutate(year = lubridate::year(Date), 
                 month = lubridate::month(Date), 
@@ -68,12 +68,14 @@ proj4string(RIMAS_GE)=CRS("+init=epsg:4326")
 
 mapview(RIMAS_GE, zcol = c("2016"), legend = TRUE)
 
-#mapview(RIMAS_merge, zcol = c("NA"), legend = TRUE, map.types = "Esri.WorldImagery")
+names(RIMAS_GE) <- c("well", "A2010", "A2011", "A2012" ,"A2013" ,
+                     "A2014" ,"A2015", "A2016", "A2017", "A2018",
+                     "A2019")
 
 #Variogram
 
 #experimental
-ve <- variogram(RIMAS_GE$`2016` ~ 1, data=RIMAS_GE, cutoff =150, width = 35)
+ve <- variogram(A2016 ~ 1, data=RIMAS_GE, cutoff =150, width = 35)
 plot(ve, plot.numbers = T, asp=1)
 
 #theoretic
@@ -86,7 +88,7 @@ va
 plot(ve, pl = T, model = va)
 
 #autofit
-variog = autofitVariogram(RIMAS_GE$`2016` ~ 1, RIMAS_GE)
+variog = autofitVariogram(A2016~ 1, RIMAS_GE)
 plot(variog)
 
 #Create a Grid
@@ -98,12 +100,12 @@ coordinates(grid_F) <- c("POINT_X", "POINT_Y")
 gridded (grid_F) <- T
 proj4string(grid_F)=CRS("+init=epsg:4326")
 
-#plot(grid_F, pch = 3, cex = 0.2)
+plot(grid_F, pch = 3, cex = 0.2)
 
 #kriging
 
 #ordinary kriging (OK)
-ok <- krige(RIMAS_GE$`2016` ~ 1, RIMAS_GE,grid_F, model = vt) 
+ok <- krige(A2016 ~ 1, RIMAS_GE,grid_F, model = vt) 
 
 #print
 print(spplot(ok, "var1.pred", asp=1, col.regions=rev(heat.colors(50)),
@@ -114,13 +116,13 @@ print(spplot(ok, "var1.var", asp=1, col.regions=rev(heat.colors(50)),
 
 # cross validation
 
-krige.cv(RIMAS_GE$`2016` ~ 1, RIMAS_GE, model = va)
+val <- krige.cv(A2016 ~ 1, RIMAS_GE, model = va)
 
 # Mean prediction error, close to zero better:
-mean(residual$val)
+mean(val$residual)
 
 # Mean square prediction error, smaller the better
-mean(residual$val^2)
+mean(val$residual^2)
 
 # Mean square normalized error, close to 1 best
 mean(val$zscore**2)
@@ -132,5 +134,3 @@ cor(val$observed, val$predicted)
 
 # Linear correlation between observed and predicted values
 plot (val$observed, val$predicted, xlab = "Observed", ylab = "Predicted") 
-
-
